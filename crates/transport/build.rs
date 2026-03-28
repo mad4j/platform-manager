@@ -4,7 +4,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tonic_build::configure().compile_protos(
         &[
-            "../../proto/action.proto",
             "../../proto/manager.proto",
             "../../proto/factory.proto",
         ],

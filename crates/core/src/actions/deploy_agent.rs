@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use super::Action;
 use super::launched_apps::LaunchedApps;
 use crate::errors::AppError;
 use crate::models::{DeployAgentRequest, DeployAgentResponse};
@@ -13,14 +12,8 @@ impl DeployAgentAction {
     pub fn new(launched_apps: Arc<LaunchedApps>) -> Self {
         Self { launched_apps }
     }
-}
 
-impl Action for DeployAgentAction {
-    fn name(&self) -> &'static str {
-        "deploy-agent"
-    }
-
-    fn execute(&self, input: Vec<u8>) -> Result<Vec<u8>, AppError> {
+    pub fn deploy(&self, input: Vec<u8>) -> Result<Vec<u8>, AppError> {
         let req: DeployAgentRequest =
             serde_json::from_slice(&input).map_err(|_| AppError::InvalidPayload)?;
 
@@ -75,7 +68,7 @@ mod tests {
         })
         .unwrap();
 
-        let output = action.execute(input).unwrap();
+        let output = action.deploy(input).unwrap();
         let resp: DeployAgentResponse = serde_json::from_slice(&output).unwrap();
 
         assert_eq!(resp.application, "billing-api");
@@ -93,7 +86,7 @@ mod tests {
         let launched_apps = Arc::new(LaunchedApps::new(vec![]));
         let action = DeployAgentAction::new(launched_apps);
 
-        let result = action.execute(b"not json".to_vec());
+        let result = action.deploy(b"not json".to_vec());
         assert!(matches!(result, Err(AppError::InvalidPayload)));
     }
 
@@ -108,7 +101,7 @@ mod tests {
         })
         .unwrap();
 
-        let result = action.execute(input);
+        let result = action.deploy(input);
         assert!(matches!(result, Err(AppError::InvalidPayload)));
     }
 
@@ -123,7 +116,7 @@ mod tests {
         })
         .unwrap();
 
-        let output = action.execute(input).unwrap();
+        let output = action.deploy(input).unwrap();
         let resp: DeployAgentResponse = serde_json::from_slice(&output).unwrap();
         assert_eq!(resp.url, "http://localhost/orders-api");
     }
