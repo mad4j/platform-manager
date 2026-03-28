@@ -3,17 +3,18 @@ package factory;
 
 // FactoryService provides factory operations for deploying agents.
 service FactoryService {
-  // DeployAgent deploys an agent from a JSON configuration.
-  rpc DeployAgent(DeployAgentRequest) returns (DeployAgentResponse);
+  // Deploy deploys an application from a JSON configuration.
+  rpc Deploy(DeployRequest) returns (DeployResponse);
 }
 
-message DeployAgentRequest {
-  // config holds the JSON configuration content for the agent to deploy.
+message DeployRequest {
+  // config holds the JSON configuration content for the application to deploy.
   string config = 1;
 }
 
-message DeployAgentResponse {
+message DeployResponse {
   string agent_id = 1;
   string message = 2;
   string error = 3;
+  string application_id = 4;
 }

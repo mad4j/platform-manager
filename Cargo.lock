@@ -705,6 +705,7 @@ name = "platform_manager"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "clap",
  "platform_manager_app",
  "platform_manager_cli",
  "platform_manager_core",

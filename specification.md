@@ -114,7 +114,7 @@ API richiesta:
 ```rust
 pub struct AppService {
     info_action: InfoAction,
-    deploy_agent_action: DeployAgentAction,
+    deploy_action: DeployAction,
 }
 
 impl AppService {
@@ -218,7 +218,7 @@ syntax = "proto3";
 package factory;
 
 service FactoryService {
-  rpc DeployAgent(DeployAgentRequest) returns (DeployAgentResponse);
+  rpc Deploy(DeployRequest) returns (DeployResponse);
 }
 ```
 
@@ -254,7 +254,7 @@ Transport Mapper
  ↓
 AppService
  ↓
-Concrete Operation (InfoAction / DeployAgentAction)
+Concrete Operation (InfoAction / DeployAction)
 ```
 
 ---
@@ -347,7 +347,7 @@ Nel crate `core` aggiungere:
 src/actions/
 ├── mod.rs
 ├── info.rs
-├── deploy_agent.rs
+├── deploy.rs
 └── launched_apps.rs
 ```
 
@@ -364,7 +364,7 @@ Usare i seguenti suffissi:
 Esempi:
 
 - `InfoAction`
-- `DeployAgentAction`
+- `DeployAction`
 - `AppService`
 - `GrpcInfoService`
 - `AppError`
@@ -588,7 +588,7 @@ Acceptance:
 Generare:
 
 - `InfoAction`
-- `DeployAgentAction`
+- `DeployAction`
 - `LaunchedApps`
 - `AppError`
 

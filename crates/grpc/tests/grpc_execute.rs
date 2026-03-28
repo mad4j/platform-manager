@@ -4,7 +4,7 @@ use std::sync::Arc;
 use platform_manager_app::AppService;
 use platform_manager_core::{
     actions::{
-        deploy_agent::DeployAgentAction,
+        deploy::DeployAction,
         info::InfoAction,
         launched_apps::LaunchedApps,
     },
@@ -12,7 +12,7 @@ use platform_manager_core::{
 };
 use platform_manager_grpc::{GrpcFactoryService, GrpcInfoService, GrpcLifeCycleService};
 use platform_manager_transport::{
-    DeployAgentRequest, FactoryServiceClient, InfoRequest, InfoServiceClient,
+    DeployRequest, FactoryServiceClient, InfoRequest, InfoServiceClient,
     LifeCycleClient, TerminateRequest,
 };
 use tokio::sync::oneshot;
@@ -27,7 +27,7 @@ fn build_app_service() -> AppService {
 
     AppService::new(
         InfoAction::new(Arc::clone(&launched_apps)),
-        DeployAgentAction::new(launched_apps),
+        DeployAction::new(launched_apps),
     )
 }
 
@@ -70,7 +70,7 @@ async fn test_grpc_info() {
 }
 
 #[tokio::test]
-async fn test_grpc_deploy_agent_updates_info_report() {
+async fn test_grpc_deploy_updates_info_report() {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
 
@@ -104,10 +104,12 @@ async fn test_grpc_deploy_agent_updates_info_report() {
         "url": "https://orders.example.com"
     })
     .to_string();
-    let deploy_request = tonic::Request::new(DeployAgentRequest { config });
-    let deploy_response = factory_client.deploy_agent(deploy_request).await.unwrap();
+    let deploy_request = tonic::Request::new(DeployRequest { config });
+    let deploy_response = factory_client.deploy(deploy_request).await.unwrap();
     let deploy_result = deploy_response.into_inner();
     assert!(deploy_result.error.is_empty());
+    assert_eq!(deploy_result.application_id, "orders-api");
+    assert_eq!(deploy_result.agent_id, "orders-api");
 
     let info_channel = tonic::transport::Channel::from_shared(endpoint)
         .unwrap()

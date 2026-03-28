@@ -14,6 +14,6 @@ pub use manager::info_service_client::InfoServiceClient;
 pub use manager::info_service_server::{InfoService, InfoServiceServer};
 pub use manager::life_cycle_client::LifeCycleClient;
 pub use manager::life_cycle_server::{LifeCycle, LifeCycleServer};
-pub use factory::{DeployAgentRequest, DeployAgentResponse};
+pub use factory::{DeployRequest, DeployResponse};
 pub use factory::factory_service_client::FactoryServiceClient;
 pub use factory::factory_service_server::{FactoryService, FactoryServiceServer};

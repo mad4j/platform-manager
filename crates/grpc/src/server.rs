@@ -3,7 +3,7 @@ use tokio::sync::oneshot;
 
 use platform_manager_app::AppService;
 use platform_manager_transport::{
-    DeployAgentRequest, DeployAgentResponse, FactoryService, FactoryServiceServer,
+    DeployRequest, DeployResponse, FactoryService, FactoryServiceServer,
     InfoRequest, InfoResponse, InfoService, InfoServiceServer,
     LifeCycle, LifeCycleServer, TerminateRequest, TerminateResponse,
 };
@@ -93,10 +93,10 @@ impl LifeCycle for GrpcLifeCycleService {
 
 #[tonic::async_trait]
 impl FactoryService for GrpcFactoryService {
-    async fn deploy_agent(
+    async fn deploy(
         &self,
-        request: Request<DeployAgentRequest>,
-    ) -> Result<Response<DeployAgentResponse>, Status> {
+        request: Request<DeployRequest>,
+    ) -> Result<Response<DeployResponse>, Status> {
         info!("received gRPC factory deploy request");
 
         let req = request.into_inner();
@@ -108,8 +108,10 @@ impl FactoryService for GrpcFactoryService {
                     Status::internal(format!("failed to parse deploy response: {e}"))
                 })?;
 
-                let agent_id = value
-                    .get("agent_id")
+                let application_id = value
+                    .get("application_id")
+                    .or_else(|| value.get("agent_id"))
+                    .or_else(|| value.get("application"))
                     .and_then(|v| v.as_str())
                     .unwrap_or_default()
                     .to_string();
@@ -117,24 +119,26 @@ impl FactoryService for GrpcFactoryService {
                     .get("message")
                     .and_then(|v| v.as_str())
                     .unwrap_or_else(|| {
-                        if agent_id.is_empty() {
+                        if application_id.is_empty() {
                             "deploy completed"
                         } else {
-                            "agent deployed"
+                            "application deployed"
                         }
                     })
                     .to_string();
 
-                Ok(Response::new(DeployAgentResponse {
-                    agent_id,
+                Ok(Response::new(DeployResponse {
+                    agent_id: application_id.clone(),
                     message,
                     error: String::new(),
+                    application_id,
                 }))
             }
-            Err(err) => Ok(Response::new(DeployAgentResponse {
+            Err(err) => Ok(Response::new(DeployResponse {
                 agent_id: String::new(),
                 message: String::new(),
                 error: err.to_string(),
+                application_id: String::new(),
             })),
         }
     }

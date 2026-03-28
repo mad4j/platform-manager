@@ -1,15 +1,15 @@
 use platform_manager_core::AppError;
-use platform_manager_core::actions::{info::InfoAction, deploy_agent::DeployAgentAction};
+use platform_manager_core::actions::{deploy::DeployAction, info::InfoAction};
 use tracing::info;
 
 pub struct AppService {
     info_action: InfoAction,
-    deploy_agent_action: DeployAgentAction,
+    deploy_action: DeployAction,
 }
 
 impl AppService {
-    pub fn new(info_action: InfoAction, deploy_agent_action: DeployAgentAction) -> Self {
-        Self { info_action, deploy_agent_action }
+    pub fn new(info_action: InfoAction, deploy_action: DeployAction) -> Self {
+        Self { info_action, deploy_action }
     }
 
     pub fn get_info(&self) -> Result<Vec<u8>, AppError> {
@@ -19,7 +19,7 @@ impl AppService {
 
     pub fn deploy(&self, payload: Vec<u8>) -> Result<Vec<u8>, AppError> {
         info!("executing deploy action");
-        self.deploy_agent_action.deploy(payload)
+        self.deploy_action.deploy(payload)
     }
 }
 
@@ -38,7 +38,7 @@ mod tests {
         }]));
         AppService::new(
             InfoAction::new(Arc::clone(&launched_apps)),
-            DeployAgentAction::new(launched_apps),
+            DeployAction::new(launched_apps),
         )
     }
 

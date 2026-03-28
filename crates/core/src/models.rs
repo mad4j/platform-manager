@@ -21,13 +21,14 @@ pub struct InfoResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct DeployAgentRequest {
+pub struct DeployRequest {
     pub application: String,
     pub url: Option<String>,
+    pub listen: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct DeployAgentResponse {
+pub struct DeployResponse {
     pub application: String,
     pub url: String,
     pub status: String,

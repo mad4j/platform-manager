@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use platform_manager_transport::{
-    DeployAgentRequest, FactoryServiceClient, InfoRequest,
+    DeployRequest, FactoryServiceClient, InfoRequest,
     InfoServiceClient, LifeCycleClient, TerminateRequest,
 };
 use serde_json::Value;
@@ -50,13 +50,20 @@ pub async fn run() -> anyhow::Result<()> {
             let config = std::fs::read_to_string(&json_file)?;
             let _: Value = serde_json::from_str(&config)?;
 
-            let request = tonic::Request::new(DeployAgentRequest { config });
-            let response = factory_client.deploy_agent(request).await?;
+            let request = tonic::Request::new(DeployRequest { config });
+            let response = factory_client.deploy(request).await?;
             let resp = response.into_inner();
             if !resp.error.is_empty() {
                 eprintln!("Error: {}", resp.error);
             } else {
+                let application_id = if resp.application_id.is_empty() {
+                    resp.agent_id.clone()
+                } else {
+                    resp.application_id.clone()
+                };
+
                 let output = serde_json::json!({
+                    "application_id": application_id,
                     "agent_id": resp.agent_id,
                     "message": resp.message,
                 });

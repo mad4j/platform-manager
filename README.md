@@ -59,6 +59,12 @@ cargo build --workspace
 cargo run --bin server
 ```
 
+Specify a custom listen address:
+
+```bash
+cargo run --bin server -- --listen 0.0.0.0:50051
+```
+
 ### Run the CLI
 
 Get platform information:
@@ -102,17 +108,21 @@ Where `agent.json` contains the deployment configuration:
 
 ```json
 {
-    "application": "orders-api",
-    "url": "https://orders.example.com"
+    "application": "server",
+    "listen": "127.0.0.1:50052",
+    "url": "http://127.0.0.1:50052"
 }
 ```
+
+When `listen` is provided, deploy starts the target application with `--listen <address>` and verifies it by calling `info` through the CLI. If the verification fails, the spawned task is terminated.
 
 Expected output shape:
 
 ```json
 {
+    "application_id": "orders-api",
     "agent_id": "orders-api",
-    "message": "application 'orders-api' deployed by deploy-agent"
+    "message": "application 'orders-api' deployed by deploy"
 }
 ```
 

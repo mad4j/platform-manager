@@ -41,6 +41,7 @@ platform_manager_grpc = { path = "crates/grpc" }
 platform_manager_cli = { path = "crates/cli" }
 tokio = { workspace = true }
 tonic = { workspace = true }
+clap = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 anyhow = { workspace = true }
