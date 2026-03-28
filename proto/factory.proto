@@ -1,0 +1,19 @@
+syntax = "proto3";
+package factory;
+
+// FactoryService provides factory operations for deploying agents.
+service FactoryService {
+  // DeployAgent deploys an agent from a JSON configuration.
+  rpc DeployAgent(DeployAgentRequest) returns (DeployAgentResponse);
+}
+
+message DeployAgentRequest {
+  // config holds the JSON configuration content for the agent to deploy.
+  string config = 1;
+}
+
+message DeployAgentResponse {
+  string agent_id = 1;
+  string message = 2;
+  string error = 3;
+}

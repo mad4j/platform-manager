@@ -1,10 +1,20 @@
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::sync::Arc;
 
 use super::Action;
+use super::launched_apps::LaunchedApps;
 use crate::errors::AppError;
 use crate::models::{InfoEndpoint, InfoResponse};
 
-pub struct InfoAction;
+pub struct InfoAction {
+    launched_apps: Arc<LaunchedApps>,
+}
+
+impl InfoAction {
+    pub fn new(launched_apps: Arc<LaunchedApps>) -> Self {
+        Self { launched_apps }
+    }
+}
 
 impl Action for InfoAction {
     fn name(&self) -> &'static str {
@@ -33,6 +43,7 @@ impl Action for InfoAction {
                     value: "/action.ActionService/Execute (generic action endpoint)".to_string(),
                 },
             ],
+            launched_applications: self.launched_apps.list(),
             task_id: format!("task-{millis}"),
         };
 
@@ -42,21 +53,36 @@ impl Action for InfoAction {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use super::*;
+    use crate::models::ApplicationAccess;
 
     #[test]
     fn test_info_success() {
-        let action = InfoAction;
+        let launched_apps = Arc::new(LaunchedApps::new(vec![ApplicationAccess {
+            application: "platform-manager".to_string(),
+            url: "http://localhost:50051".to_string(),
+        }]));
+        let action = InfoAction::new(launched_apps);
         let output = action.execute(vec![]).unwrap();
         let resp: InfoResponse = serde_json::from_slice(&output).unwrap();
         assert_eq!(resp.application, "platform-manager");
         assert_eq!(resp.endpoints.len(), 2);
+        assert_eq!(
+            resp.launched_applications,
+            vec![ApplicationAccess {
+                application: "platform-manager".to_string(),
+                url: "http://localhost:50051".to_string(),
+            }]
+        );
         assert!(resp.task_id.starts_with("task-"));
     }
 
     #[test]
     fn test_info_rejects_non_empty_payload() {
-        let action = InfoAction;
+        let launched_apps = Arc::new(LaunchedApps::new(vec![]));
+        let action = InfoAction::new(launched_apps);
         let result = action.execute(br#"{"ignored":true}"#.to_vec());
         assert!(matches!(result, Err(AppError::InvalidPayload)));
     }

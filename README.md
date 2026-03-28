@@ -23,7 +23,7 @@ platform-manager/
 ├── Cargo.toml          # workspace root
 ├── proto/
 │   ├── action.proto    # ActionService definition
-│   └── info.proto      # InfoService definition
+│   └── manager.proto   # InfoService and LifeCycle definitions
 ├── crates/
 │   ├── core/           # business logic and domain types
 │   ├── app/            # application orchestration layer
@@ -91,6 +91,35 @@ cargo run --bin cli -- --output table info
 
 This command uses the dedicated gRPC service `InfoService` and method `Info(InfoRequest) -> InfoResponse`.
 
+Request graceful termination of the server:
+
+```bash
+cargo run --bin cli -- terminate
+```
+
+Expected output shape:
+
+```json
+{
+    "message": "termination requested"
+}
+```
+
+This command uses the gRPC service `LifeCycle` and method `Terminate(TerminateRequest) -> TerminateResponse`.
+After a successful call, the server receives a shutdown signal and stops gracefully.
+
+Deploy another application using `deploy-agent`:
+
+```bash
+cargo run --bin cli -- deploy orders-api
+```
+
+Specify an explicit URL for the deployed application:
+
+```bash
+cargo run --bin cli -- deploy orders-api --url https://orders.example.com
+```
+
 Expected output shape:
 
 ```json
@@ -99,6 +128,10 @@ Expected output shape:
     "endpoints": [
         {"name": "grpc_info_rpc", "value": "/action.InfoService/Info (InfoRequest -> InfoResponse)"},
         {"name": "grpc_execute_rpc", "value": "/action.ActionService/Execute (generic action endpoint)"}
+    ],
+    "launched_applications": [
+        {"application": "platform-manager", "url": "http://localhost:50051"},
+        {"application": "orders-api", "url": "https://orders.example.com"}
     ],
     "task_id": "task-..."
 }

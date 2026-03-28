@@ -7,11 +7,28 @@ service InfoService {
   rpc Info(InfoRequest) returns (InfoResponse);
 }
 
+// LifeCycle provides lifecycle operations for the manager application.
+service LifeCycle {
+  // Terminate requests termination of the application.
+  rpc Terminate(TerminateRequest) returns (TerminateResponse);
+}
+
 message InfoRequest {}
+
+message TerminateRequest {}
+
+message TerminateResponse {
+  string message = 1;
+}
 
 message Endpoint {
   string name = 1;
   string value = 2;
+}
+
+message LaunchedApplication {
+  string application = 1;
+  string url = 2;
 }
 
 message InfoResponse {
@@ -19,4 +36,5 @@ message InfoResponse {
   repeated Endpoint endpoints = 2;
   string task_id = 3;
   string error = 4;
+  repeated LaunchedApplication launched_applications = 5;
 }

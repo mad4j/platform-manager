@@ -1,6 +1,10 @@
 use clap::{Parser, Subcommand, ValueEnum};
-use my_app_transport::{ActionRequest, ActionServiceClient, InfoRequest, InfoServiceClient};
+use my_app_transport::{
+    ActionRequest, ActionServiceClient, DeployAgentRequest, FactoryServiceClient, InfoRequest,
+    InfoServiceClient, LifeCycleClient, TerminateRequest,
+};
 use serde_json::Value;
+use std::path::PathBuf;
 use tonic::transport::Channel;
 use tracing::info;
 
@@ -29,14 +33,20 @@ enum Commands {
         action: String,
         payload: String,
     },
+    DeployAgent {
+        json_file: PathBuf,
+    },
     Info,
+    Terminate,
 }
 
 pub async fn run() -> anyhow::Result<()> {
     let cli = Cli::parse();
     let channel = Channel::from_shared(cli.server)?.connect().await?;
     let mut action_client = ActionServiceClient::new(channel.clone());
-    let mut info_client = InfoServiceClient::new(channel);
+    let mut info_client = InfoServiceClient::new(channel.clone());
+    let mut factory_client = FactoryServiceClient::new(channel.clone());
+    let mut lifecycle_client = LifeCycleClient::new(channel);
 
     match cli.command {
         Commands::Execute { action, payload } => {
@@ -51,6 +61,25 @@ pub async fn run() -> anyhow::Result<()> {
                 eprintln!("Error: {}", resp.error);
             } else {
                 let output: Value = serde_json::from_slice(&resp.payload)?;
+                print_output_value(&output, cli.output)?;
+            }
+        }
+        Commands::DeployAgent { json_file } => {
+            info!(file = %json_file.display(), "sending deploy-agent request");
+
+            let config = std::fs::read_to_string(&json_file)?;
+            let _: Value = serde_json::from_str(&config)?;
+
+            let request = tonic::Request::new(DeployAgentRequest { config });
+            let response = factory_client.deploy_agent(request).await?;
+            let resp = response.into_inner();
+            if !resp.error.is_empty() {
+                eprintln!("Error: {}", resp.error);
+            } else {
+                let output = serde_json::json!({
+                    "agent_id": resp.agent_id,
+                    "message": resp.message,
+                });
                 print_output_value(&output, cli.output)?;
             }
         }
@@ -69,10 +98,25 @@ pub async fn run() -> anyhow::Result<()> {
                         .into_iter()
                         .map(|e| serde_json::json!({"name": e.name, "value": e.value}))
                         .collect::<Vec<_>>(),
+                    "launched_applications": resp
+                        .launched_applications
+                        .into_iter()
+                        .map(|a| serde_json::json!({"application": a.application, "url": a.url}))
+                        .collect::<Vec<_>>(),
                     "task_id": resp.task_id,
                 });
                 print_output_value(&output, cli.output)?;
             }
+        }
+        Commands::Terminate => {
+            info!("sending terminate request");
+            let request = tonic::Request::new(TerminateRequest {});
+            let response = lifecycle_client.terminate(request).await?;
+            let resp = response.into_inner();
+            let output = serde_json::json!({
+                "message": resp.message,
+            });
+            print_output_value(&output, cli.output)?;
         }
     }
 
@@ -97,6 +141,7 @@ fn print_table(value: &Value) {
         Value::Object(map) => {
             if map.contains_key("application")
                 && map.contains_key("endpoints")
+                && map.contains_key("launched_applications")
                 && map.contains_key("task_id")
             {
                 print_info_table(value);
@@ -160,6 +205,23 @@ fn print_info_table(value: &Value) {
     }
 
     print_aligned_two_columns("Endpoint", "Value", &endpoint_rows);
+
+    println!();
+    let mut launched_app_rows = Vec::new();
+    if let Some(Value::Array(apps)) = value.get("launched_applications") {
+        for app in apps {
+            let application = app
+                .get("application")
+                .map(render_value)
+                .unwrap_or_else(|| "-".to_string());
+            let url = app
+                .get("url")
+                .map(render_value)
+                .unwrap_or_else(|| "-".to_string());
+            launched_app_rows.push((application, url));
+        }
+    }
+    print_aligned_two_columns("Application", "URL", &launched_app_rows);
 }
 
 fn print_aligned_two_columns(left_header: &str, right_header: &str, rows: &[(String, String)]) {

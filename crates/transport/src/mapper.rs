@@ -1,5 +1,5 @@
 use crate::action::{ActionRequest, ActionResponse};
-use crate::manager::{Endpoint, InfoResponse};
+use crate::manager::{Endpoint, InfoResponse, LaunchedApplication};
 use my_app_core::AppError;
 use my_app_core::models::InfoResponse as CoreInfoResponse;
 
@@ -37,12 +37,21 @@ pub fn to_info_proto(res: Result<Vec<u8>, AppError>) -> InfoResponse {
                         .collect(),
                     task_id: info.task_id,
                     error: String::new(),
+                    launched_applications: info
+                        .launched_applications
+                        .into_iter()
+                        .map(|app| LaunchedApplication {
+                            application: app.application,
+                            url: app.url,
+                        })
+                        .collect(),
                 },
                 Err(e) => InfoResponse {
                     application: String::new(),
                     endpoints: vec![],
                     task_id: String::new(),
                     error: format!("invalid info payload: {e}"),
+                    launched_applications: vec![],
                 },
             }
         }
@@ -51,6 +60,7 @@ pub fn to_info_proto(res: Result<Vec<u8>, AppError>) -> InfoResponse {
             endpoints: vec![],
             task_id: String::new(),
             error: e.to_string(),
+            launched_applications: vec![],
         },
     }
 }
@@ -58,7 +68,11 @@ pub fn to_info_proto(res: Result<Vec<u8>, AppError>) -> InfoResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use my_app_core::models::{InfoEndpoint, InfoResponse as CoreInfoResponse};
+    use my_app_core::models::{
+        ApplicationAccess as CoreApplicationAccess,
+        InfoEndpoint,
+        InfoResponse as CoreInfoResponse,
+    };
 
     #[test]
     fn test_from_proto() {
@@ -93,6 +107,10 @@ mod tests {
                 name: "grpc_execute".to_string(),
                 value: "/action.ActionService/Execute".to_string(),
             }],
+            launched_applications: vec![CoreApplicationAccess {
+                application: "platform-manager".to_string(),
+                url: "http://localhost:50051".to_string(),
+            }],
             task_id: "task-1".to_string(),
         })
         .unwrap();
@@ -102,6 +120,9 @@ mod tests {
         assert_eq!(resp.application, "platform-manager");
         assert_eq!(resp.endpoints.len(), 1);
         assert_eq!(resp.task_id, "task-1");
+        assert_eq!(resp.launched_applications.len(), 1);
+        assert_eq!(resp.launched_applications[0].application, "platform-manager");
+        assert_eq!(resp.launched_applications[0].url, "http://localhost:50051");
     }
 
     #[test]
@@ -110,6 +131,7 @@ mod tests {
         assert!(resp.application.is_empty());
         assert!(resp.endpoints.is_empty());
         assert!(resp.task_id.is_empty());
+        assert!(resp.launched_applications.is_empty());
         assert!(!resp.error.is_empty());
     }
 
@@ -119,6 +141,7 @@ mod tests {
         assert!(resp.application.is_empty());
         assert!(resp.endpoints.is_empty());
         assert!(resp.task_id.is_empty());
+        assert!(resp.launched_applications.is_empty());
         assert!(resp.error.starts_with("invalid info payload:"));
     }
 }
