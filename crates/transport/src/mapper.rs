@@ -1,24 +1,6 @@
-use crate::action::{ActionRequest, ActionResponse};
 use crate::manager::{Endpoint, InfoResponse, LaunchedApplication};
 use my_app_core::AppError;
 use my_app_core::models::InfoResponse as CoreInfoResponse;
-
-pub fn from_proto(req: ActionRequest) -> (String, Vec<u8>) {
-    (req.action, req.payload)
-}
-
-pub fn to_proto(res: Result<Vec<u8>, AppError>) -> ActionResponse {
-    match res {
-        Ok(payload) => ActionResponse {
-            payload,
-            error: String::new(),
-        },
-        Err(e) => ActionResponse {
-            payload: vec![],
-            error: e.to_string(),
-        },
-    }
-}
 
 pub fn to_info_proto(res: Result<Vec<u8>, AppError>) -> InfoResponse {
     match res {
@@ -75,37 +57,12 @@ mod tests {
     };
 
     #[test]
-    fn test_from_proto() {
-        let req = ActionRequest {
-            action: "echo".to_string(),
-            payload: b"data".to_vec(),
-        };
-        let (action, payload) = from_proto(req);
-        assert_eq!(action, "echo");
-        assert_eq!(payload, b"data");
-    }
-
-    #[test]
-    fn test_to_proto_success() {
-        let resp = to_proto(Ok(b"result".to_vec()));
-        assert_eq!(resp.payload, b"result");
-        assert!(resp.error.is_empty());
-    }
-
-    #[test]
-    fn test_to_proto_error() {
-        let resp = to_proto(Err(AppError::ActionNotFound("test".to_string())));
-        assert!(resp.payload.is_empty());
-        assert!(!resp.error.is_empty());
-    }
-
-    #[test]
     fn test_to_info_proto_success() {
         let payload = serde_json::to_vec(&CoreInfoResponse {
             application: "platform-manager".to_string(),
             endpoints: vec![InfoEndpoint {
-                name: "grpc_execute".to_string(),
-                value: "/action.ActionService/Execute".to_string(),
+                name: "grpc_info_rpc".to_string(),
+                value: "/manager.InfoService/Info (InfoRequest -> InfoResponse)".to_string(),
             }],
             launched_applications: vec![CoreApplicationAccess {
                 application: "platform-manager".to_string(),
@@ -127,7 +84,7 @@ mod tests {
 
     #[test]
     fn test_to_info_proto_error() {
-        let resp = to_info_proto(Err(AppError::ActionNotFound("info".to_string())));
+        let resp = to_info_proto(Err(AppError::InvalidPayload));
         assert!(resp.application.is_empty());
         assert!(resp.endpoints.is_empty());
         assert!(resp.task_id.is_empty());

@@ -1,7 +1,6 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::sync::Arc;
 
-use super::Action;
 use super::launched_apps::LaunchedApps;
 use crate::errors::AppError;
 use crate::models::{InfoEndpoint, InfoResponse};
@@ -14,18 +13,8 @@ impl InfoAction {
     pub fn new(launched_apps: Arc<LaunchedApps>) -> Self {
         Self { launched_apps }
     }
-}
 
-impl Action for InfoAction {
-    fn name(&self) -> &'static str {
-        "info"
-    }
-
-    fn execute(&self, input: Vec<u8>) -> Result<Vec<u8>, AppError> {
-        if !input.is_empty() {
-            return Err(AppError::InvalidPayload);
-        }
-
+    pub fn get_info(&self) -> Result<Vec<u8>, AppError> {
         let millis = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map_err(|e| AppError::Execution(e.to_string()))?
@@ -36,11 +25,7 @@ impl Action for InfoAction {
             endpoints: vec![
                 InfoEndpoint {
                     name: "grpc_info_rpc".to_string(),
-                    value: "/action.InfoService/Info (InfoRequest -> InfoResponse)".to_string(),
-                },
-                InfoEndpoint {
-                    name: "grpc_execute_rpc".to_string(),
-                    value: "/action.ActionService/Execute (generic action endpoint)".to_string(),
+                    value: "/manager.InfoService/Info (InfoRequest -> InfoResponse)".to_string(),
                 },
             ],
             launched_applications: self.launched_apps.list(),
@@ -65,10 +50,10 @@ mod tests {
             url: "http://localhost:50051".to_string(),
         }]));
         let action = InfoAction::new(launched_apps);
-        let output = action.execute(vec![]).unwrap();
+        let output = action.get_info().unwrap();
         let resp: InfoResponse = serde_json::from_slice(&output).unwrap();
         assert_eq!(resp.application, "platform-manager");
-        assert_eq!(resp.endpoints.len(), 2);
+        assert_eq!(resp.endpoints.len(), 1);
         assert_eq!(
             resp.launched_applications,
             vec![ApplicationAccess {
@@ -77,13 +62,5 @@ mod tests {
             }]
         );
         assert!(resp.task_id.starts_with("task-"));
-    }
-
-    #[test]
-    fn test_info_rejects_non_empty_payload() {
-        let launched_apps = Arc::new(LaunchedApps::new(vec![]));
-        let action = InfoAction::new(launched_apps);
-        let result = action.execute(br#"{"ignored":true}"#.to_vec());
-        assert!(matches!(result, Err(AppError::InvalidPayload)));
     }
 }

@@ -2,17 +2,15 @@ use std::sync::{Arc, Mutex};
 
 use my_app_app::AppService;
 use my_app_core::{
-    ActionRegistry,
     actions::{
         deploy_agent::DeployAgentAction,
-        echo::EchoAction,
         info::InfoAction,
         launched_apps::LaunchedApps,
     },
     models::ApplicationAccess,
 };
 use my_app_grpc::{
-    GrpcActionService, GrpcFactoryService, GrpcInfoService, GrpcLifeCycleService,
+    GrpcFactoryService, GrpcInfoService, GrpcLifeCycleService,
 };
 use tokio::sync::oneshot;
 use tonic::transport::Server;
@@ -27,12 +25,9 @@ async fn main() -> anyhow::Result<()> {
         url: "http://localhost:50051".to_string(),
     }]));
 
-    let mut registry = ActionRegistry::new();
-    registry.register(Box::new(EchoAction));
-    registry.register(Box::new(DeployAgentAction::new(Arc::clone(&launched_apps))));
-    registry.register(Box::new(InfoAction::new(launched_apps)));
-    let app = Arc::new(AppService::new(registry));
-    let grpc_action_service = GrpcActionService::new(Arc::clone(&app));
+    let info_action = InfoAction::new(Arc::clone(&launched_apps));
+    let deploy_agent_action = DeployAgentAction::new(launched_apps);
+    let app = Arc::new(AppService::new(info_action, deploy_agent_action));
     let grpc_info_service = GrpcInfoService::new(Arc::clone(&app));
     let grpc_factory_service = GrpcFactoryService::new(app);
     let (shutdown_tx, shutdown_rx) = oneshot::channel::<()>();
@@ -42,7 +37,6 @@ async fn main() -> anyhow::Result<()> {
     info!("Starting gRPC server on {}", addr);
 
     Server::builder()
-        .add_service(grpc_action_service.into_server())
         .add_service(grpc_info_service.into_server())
         .add_service(grpc_factory_service.into_server())
         .add_service(grpc_lifecycle_service.into_server())

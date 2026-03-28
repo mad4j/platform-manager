@@ -8,7 +8,7 @@ The project is structured as a Cargo workspace with the following crates:
 
 | Crate | Description |
 |---|---|
-| `core` | Business logic, action trait, registry and domain errors (no external dependencies) |
+| `core` | Business logic, domain models and domain errors (no external dependencies) |
 | `app` | Application service layer that orchestrates action execution |
 | `transport` | Pure mapping functions between protobuf types and domain types |
 | `grpc` | Tonic-based gRPC server implementation |
@@ -22,8 +22,8 @@ The single source of truth for the service contract is the `proto/` directory.
 platform-manager/
 ├── Cargo.toml          # workspace root
 ├── proto/
-│   ├── action.proto    # ActionService definition
-│   └── manager.proto   # InfoService and LifeCycle definitions
+│   ├── manager.proto   # InfoService and LifeCycle definitions
+│   └── factory.proto   # FactoryService definition
 ├── crates/
 │   ├── core/           # business logic and domain types
 │   ├── app/            # application orchestration layer
@@ -61,22 +61,6 @@ cargo run --bin server
 
 ### Run the CLI
 
-```bash
-cargo run --bin cli -- execute echo '{"message":"hello"}'
-```
-
-Use table output:
-
-```bash
-cargo run --bin cli -- --output table execute echo '{"message":"hello"}'
-```
-
-Expected output:
-
-```json
-{"message":"hello"}
-```
-
 Get platform information:
 
 ```bash
@@ -111,13 +95,16 @@ After a successful call, the server receives a shutdown signal and stops gracefu
 Deploy another application using `deploy-agent`:
 
 ```bash
-cargo run --bin cli -- deploy orders-api
+cargo run --bin cli -- deploy-agent agent.json
 ```
 
-Specify an explicit URL for the deployed application:
+Where `agent.json` contains the deployment configuration:
 
-```bash
-cargo run --bin cli -- deploy orders-api --url https://orders.example.com
+```json
+{
+    "application": "orders-api",
+    "url": "https://orders.example.com"
+}
 ```
 
 Expected output shape:
@@ -126,8 +113,7 @@ Expected output shape:
 {
     "application": "platform-manager",
     "endpoints": [
-        {"name": "grpc_info_rpc", "value": "/action.InfoService/Info (InfoRequest -> InfoResponse)"},
-        {"name": "grpc_execute_rpc", "value": "/action.ActionService/Execute (generic action endpoint)"}
+        {"name": "grpc_info_rpc", "value": "/manager.InfoService/Info (InfoRequest -> InfoResponse)"}
     ],
     "launched_applications": [
         {"application": "platform-manager", "url": "http://localhost:50051"},

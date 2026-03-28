@@ -7,13 +7,13 @@ Realizzare un progetto Rust basato su architettura modulare che esponga funziona
 - **CLI** per utilizzo interattivo e scripting
 - **servizio gRPC** per integrazione machine-to-machine
 
-L’architettura deve essere progettata per:
+L'architettura deve essere progettata per:
 
 - massima separazione delle responsabilità
 - forte tipizzazione tramite **Protocol Buffers**
 - singolo punto di verità per il contratto di servizio
 - elevata testabilità
-- facilità di estensione con nuove azioni
+- facilità di estensione con nuove funzionalità
 
 Il documento è scritto in modo da poter essere usato come **input per la generazione automatica del progetto da parte di un modello AI**.
 
@@ -25,10 +25,9 @@ Il documento è scritto in modo da poter essere usato come **input per la genera
 
 Il sistema deve consentire:
 
-1. esecuzione di azioni tramite comando CLI
-2. esecuzione delle stesse azioni tramite endpoint gRPC
+1. esecuzione di operazioni tramite comando CLI
+2. esecuzione delle stesse operazioni tramite endpoint gRPC dedicati
 3. condivisione della stessa logica applicativa tra CLI e server
-4. aggiunta di nuove azioni senza modificare l’infrastruttura esistente
 
 ### Requisiti non funzionali
 
@@ -64,7 +63,8 @@ Generare il seguente workspace Cargo.
 my_app/
 ├── Cargo.toml
 ├── proto/
-│   └── action.proto
+│   ├── manager.proto
+│   └── factory.proto
 ├── crates/
 │   ├── core/
 │   ├── app/
@@ -85,9 +85,9 @@ my_app/
 Contiene esclusivamente:
 
 - logica di business
-- definizione delle azioni
+- definizione delle operazioni
 - errori di dominio
-- trait comuni
+- modelli comuni
 
 Non deve dipendere da:
 
@@ -95,33 +95,6 @@ Non deve dipendere da:
 - clap
 - tokio
 - protoc generated types
-
-### API richiesta
-
-```rust
-pub trait Action: Send + Sync {
-    fn name(&self) -> &'static str;
-
-    fn execute(
-        &self,
-        input: Vec<u8>,
-    ) -> Result<Vec<u8>, AppError>;
-}
-```
-
-Deve includere anche:
-
-```rust
-pub struct ActionRegistry {
-    // mappa nome azione -> implementazione
-}
-```
-
-Funzioni richieste:
-
-- `register()`
-- `get()`
-- `execute()`
 
 ---
 
@@ -131,7 +104,7 @@ Layer di orchestrazione.
 
 Responsabile di:
 
-- invocare il registry
+- invocare le operazioni di business
 - gestire workflow applicativi
 - validazione input applicativa
 - mapping errori di alto livello
@@ -140,15 +113,13 @@ API richiesta:
 
 ```rust
 pub struct AppService {
-    registry: ActionRegistry,
+    info_action: InfoAction,
+    deploy_agent_action: DeployAgentAction,
 }
 
 impl AppService {
-    pub fn execute(
-        &self,
-        action: &str,
-        payload: Vec<u8>,
-    ) -> Result<Vec<u8>, AppError>
+    pub fn get_info(&self) -> Result<Vec<u8>, AppError>;
+    pub fn deploy_agent(&self, payload: Vec<u8>) -> Result<Vec<u8>, AppError>;
 }
 ```
 
@@ -166,8 +137,7 @@ Deve contenere funzioni pure.
 Esempio:
 
 ```rust
-pub fn from_proto(req: ActionRequest) -> (String, Vec<u8>);
-pub fn to_proto(res: Result<Vec<u8>, AppError>) -> ActionResponse;
+pub fn to_info_proto(res: Result<Vec<u8>, AppError>) -> InfoResponse;
 ```
 
 ---
@@ -189,10 +159,12 @@ Il server deve usare:
 #[tonic::async_trait]
 ```
 
-Deve esporre servizio:
+Deve esporre i servizi:
 
 ```rust
-ActionServiceServer
+InfoServiceServer
+FactoryServiceServer
+LifeCycleServer
 ```
 
 ---
@@ -213,51 +185,57 @@ Deve usare subcommand pattern.
 Esempio:
 
 ```rust
-my_app execute compress '{"path":"file.txt"}'
+my_app info
+my_app deploy-agent agent.json
+my_app terminate
 ```
 
 ---
 
 ## 6. Specifica protobuf
 
-Generare file:
+Generare i file:
 
-`proto/action.proto`
-
-Contenuto richiesto:
+`proto/manager.proto` — InfoService e LifeCycle
 
 ```proto
 syntax = "proto3";
+package manager;
 
-package action;
-
-service ActionService {
-  rpc Execute(ActionRequest) returns (ActionResponse);
+service InfoService {
+  rpc Info(InfoRequest) returns (InfoResponse);
 }
 
-message ActionRequest {
-  string action = 1;
-  bytes payload = 2;
-}
-
-message ActionResponse {
-  bytes payload = 1;
-  string error = 2;
+service LifeCycle {
+  rpc Terminate(TerminateRequest) returns (TerminateResponse);
 }
 ```
 
-Questo file è il **single source of truth**.
+`proto/factory.proto` — FactoryService
+
+```proto
+syntax = "proto3";
+package factory;
+
+service FactoryService {
+  rpc DeployAgent(DeployAgentRequest) returns (DeployAgentResponse);
+}
+```
+
+Questi file sono il **single source of truth**.
 
 ---
 
 ## 7. build.rs
 
-Il crate gRPC deve includere `build.rs`.
+Il crate transport deve includere `build.rs`.
 
 ```rust
 fn main() {
-    tonic_build::compile_protos("../../proto/action.proto")
-        .unwrap();
+    tonic_build::configure().compile_protos(
+        &["../../proto/manager.proto", "../../proto/factory.proto"],
+        &["../../proto"],
+    ).unwrap();
 }
 ```
 
@@ -276,9 +254,7 @@ Transport Mapper
  ↓
 AppService
  ↓
-ActionRegistry
- ↓
-Concrete Action
+Concrete Operation (InfoAction / DeployAgentAction)
 ```
 
 ---
@@ -295,41 +271,15 @@ I tipi protobuf non devono essere usati nel crate `core`.
 
 ### Regola 3
 
-Ogni nuova azione deve implementare `Action`.
+La CLI deve sempre usare gRPC, senza accesso diretto al core.
 
 ### Regola 4
 
-La CLI deve sempre usare gRPC, senza accesso diretto al core.
+Ogni operazione esposta deve avere un endpoint gRPC dedicato con tipi fortemente tipizzati.
 
 ---
 
-## 10. Azione di esempio obbligatoria
-
-Generare almeno una action di esempio:
-
-`echo`
-
-Comportamento:
-
-input payload JSON:
-
-```json
-{
-  "message": "hello"
-}
-```
-
-output:
-
-```json
-{
-  "message": "hello"
-}
-```
-
----
-
-## 11. Test richiesti
+## 10. Test richiesti
 
 Generare test per:
 
@@ -340,33 +290,32 @@ Generare test per:
 
 ---
 
-## 12. Output atteso dalla generazione AI
+## 11. Output atteso dalla generazione AI
 
 Il modello AI deve generare:
 
 1. workspace completo
 2. `Cargo.toml` root
 3. `Cargo.toml` per ogni crate
-4. file `action.proto`
+4. file `manager.proto` e `factory.proto`
 5. implementazione server
 6. implementazione client CLI
-7. action di esempio
-8. test base
-9. README di esecuzione
+7. test base
+8. README di esecuzione
 
 ---
 
-## 13. Prompt operativo per generazione
+## 12. Prompt operativo per generazione
 
 Usare questa istruzione come prompt di generazione:
 
-> Genera un workspace Rust multi-crate conforme a questa specifica, completo di codice compilabile, test base e action di esempio `echo`, usando tonic, tokio, clap e protobuf come source of truth.
+> Genera un workspace Rust multi-crate conforme a questa specifica, completo di codice compilabile e test base, usando tonic, tokio, clap e protobuf come source of truth. Ogni operazione deve avere un endpoint gRPC dedicato.
 
 
 
 ---
 
-## 14. Convenzioni di naming e struttura del codice
+## 13. Convenzioni di naming e struttura del codice
 
 Per massimizzare la qualità della generazione automatica, applicare le seguenti convenzioni.
 
@@ -397,7 +346,9 @@ Nel crate `core` aggiungere:
 ```text
 src/actions/
 ├── mod.rs
-└── echo.rs
+├── info.rs
+├── deploy_agent.rs
+└── launched_apps.rs
 ```
 
 ### Naming tipi
@@ -412,14 +363,15 @@ Usare i seguenti suffissi:
 
 Esempi:
 
-- `EchoAction`
+- `InfoAction`
+- `DeployAgentAction`
 - `AppService`
-- `GrpcActionService`
+- `GrpcInfoService`
 - `AppError`
 
 ---
 
-## 15. Standard di error handling
+## 14. Standard di error handling
 
 ### Dominio
 
@@ -430,9 +382,6 @@ Esempio:
 ```rust
 #[derive(thiserror::Error, Debug)]
 pub enum AppError {
-    #[error("action not found: {0}")]
-    ActionNotFound(String),
-
     #[error("invalid payload")]
     InvalidPayload,
 
@@ -453,7 +402,7 @@ Regola obbligatoria:
 
 ---
 
-## 16. Logging e observability
+## 15. Logging e observability
 
 Integrare `tracing` come standard.
 
@@ -461,14 +410,14 @@ Requisiti obbligatori:
 
 - log startup server
 - log richiesta ricevuta
-- log azione eseguita
+- log operazione eseguita
 - log errore
 - log shutdown
 
 Esempio:
 
 ```rust
-tracing::info!(action = action_name, "executing action");
+tracing::info!("executing info action");
 ```
 
 Il `main` del server deve inizializzare:
@@ -479,11 +428,11 @@ tracing_subscriber::fmt::init();
 
 ---
 
-## 17. Standard di testing
+## 16. Standard di testing
 
 ### Unit test
 
-Ogni action deve avere unit test dedicati.
+Ogni operazione deve avere unit test dedicati.
 
 Pattern richiesto:
 
@@ -496,7 +445,6 @@ Coverage minimo richiesto:
 
 - success path
 - invalid payload
-- action non trovata
 
 ### Integration test gRPC
 
@@ -518,12 +466,12 @@ Test obbligatori:
 Test di esecuzione comando:
 
 ```bash
-cargo run --bin cli -- execute echo '{"message":"hello"}'
+cargo run --bin cli -- info
 ```
 
 ---
 
-## 18. Criteri di acceptance
+## 17. Criteri di acceptance
 
 Il progetto generato è accettato solo se soddisfa tutti i seguenti criteri.
 
@@ -554,28 +502,21 @@ cargo run --bin server
 CLI invocabile con:
 
 ```bash
-cargo run --bin cli -- execute echo '{"message":"hello"}'
+cargo run --bin cli -- info
 ```
 
 ### Risultato atteso
 
-Output JSON:
-
-```json
-{
-  "message": "hello"
-}
-```
+Output JSON con informazioni sulla piattaforma e le applicazioni avviate.
 
 ---
 
-## 19. Estendibilità futura
+## 18. Estendibilità futura
 
 L'architettura deve essere predisposta per futura estensione con:
 
 - autenticazione gRPC
 - TLS
-- plugin action dinamiche
 - streaming gRPC
 - health check endpoint
 - metrics Prometheus
@@ -584,17 +525,17 @@ Non implementare tali feature ora, ma predisporre la struttura per supportarle.
 
 ---
 
-## 20. Prompt finale ottimizzato per AI code generation
+## 19. Prompt finale ottimizzato per AI code generation
 
 Usare il seguente prompt finale.
 
-> Genera un workspace Rust multi-crate production-ready conforme a questa specifica. Il codice deve essere compilabile, idiomatico, testabile, con separazione rigorosa tra core, application layer, transport, gRPC server e CLI client. Usa tonic, tokio, prost, clap, tracing, thiserror e anyhow. Includi unit test, integration test e una action di esempio echo completamente funzionante.
+> Genera un workspace Rust multi-crate production-ready conforme a questa specifica. Il codice deve essere compilabile, idiomatico, testabile, con separazione rigorosa tra core, application layer, transport, gRPC server e CLI client. Usa tonic, tokio, prost, clap, tracing, thiserror e anyhow. Includi unit test e integration test. Ogni operazione esposta deve avere un endpoint gRPC dedicato con tipi fortemente tipizzati.
 
 
 
 ---
 
-## 21. Checklist di generazione sequenziale (generator-friendly)
+## 20. Checklist di generazione sequenziale (generator-friendly)
 
 Questa sezione è ottimizzata per modelli AI che lavorano meglio con task step-by-step.
 
@@ -621,20 +562,19 @@ Acceptance:
 
 ### Step 2 — Definizione contratto protobuf
 
-Generare `proto/action.proto` esattamente secondo la specifica.
+Generare `proto/manager.proto` e `proto/factory.proto` esattamente secondo la specifica.
 
 Acceptance:
 
 - sintassi `proto3`
-- package `action`
-- service `ActionService`
-- RPC `Execute`
+- servizi dedicati per ogni operazione
+- tipi fortemente tipizzati
 
 ---
 
 ### Step 3 — Code generation setup
 
-Generare `build.rs` nel crate gRPC.
+Generare `build.rs` nel crate transport.
 
 Acceptance:
 
@@ -647,10 +587,10 @@ Acceptance:
 
 Generare:
 
-- trait `Action`
-- `ActionRegistry`
+- `InfoAction`
+- `DeployAgentAction`
+- `LaunchedApps`
 - `AppError`
-- action `EchoAction`
 
 Acceptance:
 
@@ -665,8 +605,7 @@ Generare `AppService`.
 
 Acceptance:
 
-- orchestration corretta
-- delega al registry
+- metodi specifici per ogni operazione
 - gestione errori tipizzati
 
 ---
@@ -675,8 +614,7 @@ Acceptance:
 
 Generare mapping funzioni:
 
-- `from_proto()`
-- `to_proto()`
+- `to_info_proto()`
 
 Acceptance:
 
@@ -689,7 +627,7 @@ Acceptance:
 
 Generare:
 
-- implementazione trait tonic
+- implementazione trait tonic per ogni servizio
 - bootstrap server
 - logging
 
@@ -705,7 +643,7 @@ Acceptance:
 Generare:
 
 - parser clap
-- subcommand `execute`
+- subcommand per ogni operazione
 - client gRPC
 
 Acceptance:
@@ -728,7 +666,7 @@ Acceptance:
 
 ---
 
-## 22. Strategia di generazione consigliata per AI
+## 21. Strategia di generazione consigliata per AI
 
 Il modello deve generare il progetto seguendo la seguente strategia:
 
@@ -744,4 +682,3 @@ Il modello deve generare il progetto seguendo la seguente strategia:
 Regola importante:
 
 > non generare tutto in un singolo blocco monolitico; procedere per step incrementali e coerenti.
-

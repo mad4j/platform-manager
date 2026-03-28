@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use my_app_transport::{
-    ActionRequest, ActionServiceClient, DeployAgentRequest, FactoryServiceClient, InfoRequest,
+    DeployAgentRequest, FactoryServiceClient, InfoRequest,
     InfoServiceClient, LifeCycleClient, TerminateRequest,
 };
 use serde_json::Value;
@@ -29,10 +29,6 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    Execute {
-        action: String,
-        payload: String,
-    },
     DeployAgent {
         json_file: PathBuf,
     },
@@ -43,27 +39,11 @@ enum Commands {
 pub async fn run() -> anyhow::Result<()> {
     let cli = Cli::parse();
     let channel = Channel::from_shared(cli.server)?.connect().await?;
-    let mut action_client = ActionServiceClient::new(channel.clone());
     let mut info_client = InfoServiceClient::new(channel.clone());
     let mut factory_client = FactoryServiceClient::new(channel.clone());
     let mut lifecycle_client = LifeCycleClient::new(channel);
 
     match cli.command {
-        Commands::Execute { action, payload } => {
-            info!(action = %action, "sending execute request");
-            let request = tonic::Request::new(ActionRequest {
-                action,
-                payload: payload.into_bytes(),
-            });
-            let response = action_client.execute(request).await?;
-            let resp = response.into_inner();
-            if !resp.error.is_empty() {
-                eprintln!("Error: {}", resp.error);
-            } else {
-                let output: Value = serde_json::from_slice(&resp.payload)?;
-                print_output_value(&output, cli.output)?;
-            }
-        }
         Commands::DeployAgent { json_file } => {
             info!(file = %json_file.display(), "sending deploy-agent request");
 
