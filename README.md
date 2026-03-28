@@ -111,15 +111,8 @@ Expected output shape:
 
 ```json
 {
-    "application": "platform-manager",
-    "endpoints": [
-        {"name": "grpc_info_rpc", "value": "/manager.InfoService/Info (InfoRequest -> InfoResponse)"}
-    ],
-    "launched_applications": [
-        {"application": "platform-manager", "url": "http://localhost:50051"},
-        {"application": "orders-api", "url": "https://orders.example.com"}
-    ],
-    "task_id": "task-..."
+    "agent_id": "orders-api",
+    "message": "application 'orders-api' deployed by deploy-agent"
 }
 ```
 
