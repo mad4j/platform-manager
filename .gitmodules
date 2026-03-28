@@ -1,0 +1,3 @@
+[submodule "external/deploy-agent"]
+	path = external/deploy-agent
+	url = https://github.com/mad4j/deploy-agent.git
