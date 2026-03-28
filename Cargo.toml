@@ -22,7 +22,7 @@ anyhow = "1"
 tonic-build = "0.12"
 
 [package]
-name = "my_app"
+name = "platform_manager"
 version = "0.1.0"
 edition = "2021"
 
@@ -35,12 +35,13 @@ name = "cli"
 path = "bin/cli.rs"
 
 [dependencies]
-my_app_core = { path = "crates/core" }
-my_app_app = { path = "crates/app" }
-my_app_grpc = { path = "crates/grpc" }
-my_app_cli = { path = "crates/cli" }
+platform_manager_core = { path = "crates/core" }
+platform_manager_app = { path = "crates/app" }
+platform_manager_grpc = { path = "crates/grpc" }
+platform_manager_cli = { path = "crates/cli" }
 tokio = { workspace = true }
 tonic = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 anyhow = { workspace = true }
+

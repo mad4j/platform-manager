@@ -1,6 +1,6 @@
 use crate::manager::{Endpoint, InfoResponse, LaunchedApplication};
-use my_app_core::AppError;
-use my_app_core::models::InfoResponse as CoreInfoResponse;
+use platform_manager_core::AppError;
+use platform_manager_core::models::InfoResponse as CoreInfoResponse;
 
 pub fn to_info_proto(res: Result<Vec<u8>, AppError>) -> InfoResponse {
     match res {
@@ -50,7 +50,7 @@ pub fn to_info_proto(res: Result<Vec<u8>, AppError>) -> InfoResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use my_app_core::models::{
+    use platform_manager_core::models::{
         ApplicationAccess as CoreApplicationAccess,
         InfoEndpoint,
         InfoResponse as CoreInfoResponse,
@@ -102,3 +102,4 @@ mod tests {
         assert!(resp.error.starts_with("invalid info payload:"));
     }
 }
+

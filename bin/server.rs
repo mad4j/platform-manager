@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
-use my_app_app::AppService;
-use my_app_core::{
+use platform_manager_app::AppService;
+use platform_manager_core::{
     actions::{
         deploy_agent::DeployAgentAction,
         info::InfoAction,
@@ -9,7 +9,7 @@ use my_app_core::{
     },
     models::ApplicationAccess,
 };
-use my_app_grpc::{
+use platform_manager_grpc::{
     GrpcFactoryService, GrpcInfoService, GrpcLifeCycleService,
 };
 use tokio::sync::oneshot;
@@ -49,3 +49,4 @@ async fn main() -> anyhow::Result<()> {
     info!("Server shut down");
     Ok(())
 }
+

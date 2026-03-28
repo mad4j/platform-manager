@@ -1,8 +1,8 @@
 use std::sync::Mutex;
 use std::sync::Arc;
 
-use my_app_app::AppService;
-use my_app_core::{
+use platform_manager_app::AppService;
+use platform_manager_core::{
     actions::{
         deploy_agent::DeployAgentAction,
         info::InfoAction,
@@ -10,8 +10,8 @@ use my_app_core::{
     },
     models::ApplicationAccess,
 };
-use my_app_grpc::{GrpcFactoryService, GrpcInfoService, GrpcLifeCycleService};
-use my_app_transport::{
+use platform_manager_grpc::{GrpcFactoryService, GrpcInfoService, GrpcLifeCycleService};
+use platform_manager_transport::{
     DeployAgentRequest, FactoryServiceClient, InfoRequest, InfoServiceClient,
     LifeCycleClient, TerminateRequest,
 };
@@ -176,3 +176,4 @@ async fn test_grpc_terminate_requests_shutdown() {
         .unwrap()
         .unwrap();
 }
+

@@ -1,13 +1,13 @@
 use std::sync::{Arc, Mutex};
 use tokio::sync::oneshot;
 
-use my_app_app::AppService;
-use my_app_transport::{
+use platform_manager_app::AppService;
+use platform_manager_transport::{
     DeployAgentRequest, DeployAgentResponse, FactoryService, FactoryServiceServer,
     InfoRequest, InfoResponse, InfoService, InfoServiceServer,
     LifeCycle, LifeCycleServer, TerminateRequest, TerminateResponse,
 };
-use my_app_transport::to_info_proto;
+use platform_manager_transport::to_info_proto;
 use tonic::{Request, Response, Status};
 use tracing::info;
 
@@ -139,3 +139,4 @@ impl FactoryService for GrpcFactoryService {
         }
     }
 }
+

@@ -1,5 +1,5 @@
-use my_app_core::AppError;
-use my_app_core::actions::{info::InfoAction, deploy_agent::DeployAgentAction};
+use platform_manager_core::AppError;
+use platform_manager_core::actions::{info::InfoAction, deploy_agent::DeployAgentAction};
 use tracing::info;
 
 pub struct AppService {
@@ -28,8 +28,8 @@ mod tests {
     use std::sync::Arc;
 
     use super::*;
-    use my_app_core::actions::launched_apps::LaunchedApps;
-    use my_app_core::models::ApplicationAccess;
+    use platform_manager_core::actions::launched_apps::LaunchedApps;
+    use platform_manager_core::models::ApplicationAccess;
 
     fn build_service() -> AppService {
         let launched_apps = Arc::new(LaunchedApps::new(vec![ApplicationAccess {
@@ -61,3 +61,4 @@ mod tests {
         assert_eq!(val["application"], "orders-api");
     }
 }
+

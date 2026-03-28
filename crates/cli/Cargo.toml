@@ -1,10 +1,10 @@
 [package]
-name = "my_app_cli"
+name = "platform_manager_cli"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-my_app_transport = { path = "../transport" }
+platform_manager_transport = { path = "../transport" }
 tokio = { workspace = true }
 tonic = { workspace = true }
 clap = { workspace = true }
@@ -12,3 +12,4 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 anyhow = { workspace = true }
 serde_json = { workspace = true }
+

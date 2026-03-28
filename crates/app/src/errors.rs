@@ -1,1 +1,2 @@
-pub use my_app_core::AppError;
+pub use platform_manager_core::AppError;
+

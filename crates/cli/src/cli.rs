@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand, ValueEnum};
-use my_app_transport::{
+use platform_manager_transport::{
     DeployAgentRequest, FactoryServiceClient, InfoRequest,
     InfoServiceClient, LifeCycleClient, TerminateRequest,
 };
@@ -15,7 +15,7 @@ enum OutputFormat {
 }
 
 #[derive(Parser)]
-#[command(name = "my_app", about = "Platform Manager CLI")]
+#[command(name = "platform_manager", about = "Platform Manager CLI")]
 pub struct Cli {
     #[arg(long, default_value = "http://[::1]:50051")]
     server: String,
@@ -244,3 +244,4 @@ fn render_value(value: &Value) -> String {
         _ => value.to_string(),
     }
 }
+

@@ -60,7 +60,7 @@ Il progetto deve usare obbligatoriamente:
 Generare il seguente workspace Cargo.
 
 ```text
-my_app/
+platform_manager/
 ├── Cargo.toml
 ├── proto/
 │   ├── manager.proto
@@ -185,9 +185,9 @@ Deve usare subcommand pattern.
 Esempio:
 
 ```rust
-my_app info
-my_app deploy agent.json
-my_app terminate
+platform_manager info
+platform_manager deploy agent.json
+platform_manager terminate
 ```
 
 ---
@@ -323,11 +323,11 @@ Per massimizzare la qualità della generazione automatica, applicare le seguenti
 
 Usare nomi espliciti e consistenti:
 
-- `my_app_core`
-- `my_app_app`
-- `my_app_transport`
-- `my_app_grpc`
-- `my_app_cli`
+- `platform_manager_core`
+- `platform_manager_app`
+- `platform_manager_transport`
+- `platform_manager_grpc`
+- `platform_manager_cli`
 
 ### Naming moduli
 
@@ -546,7 +546,7 @@ Il generatore deve eseguire i task **in ordine rigoroso**.
 Generare la struttura root:
 
 ```text
-my_app/
+platform_manager/
 ├── Cargo.toml
 ├── proto/
 ├── crates/
@@ -682,3 +682,4 @@ Il modello deve generare il progetto seguendo la seguente strategia:
 Regola importante:
 
 > non generare tutto in un singolo blocco monolitico; procedere per step incrementali e coerenti.
+
