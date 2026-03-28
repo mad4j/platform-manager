@@ -1,0 +1,18 @@
+[package]
+name = "my_app_grpc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+my_app_app = { path = "../app" }
+my_app_transport = { path = "../transport" }
+tokio = { workspace = true }
+tonic = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+tokio-stream = { version = "0.1", features = ["net"] }
+serde_json = { workspace = true }
+my_app_core = { path = "../core" }

@@ -1,0 +1,46 @@
+[workspace]
+members = [
+    "crates/core",
+    "crates/app",
+    "crates/transport",
+    "crates/grpc",
+    "crates/cli",
+]
+resolver = "2"
+
+[workspace.dependencies]
+tokio = { version = "1", features = ["full"] }
+tonic = "0.12"
+prost = "0.13"
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+thiserror = "1"
+anyhow = "1"
+tonic-build = "0.12"
+
+[package]
+name = "my_app"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "server"
+path = "bin/server.rs"
+
+[[bin]]
+name = "cli"
+path = "bin/cli.rs"
+
+[dependencies]
+my_app_core = { path = "crates/core" }
+my_app_app = { path = "crates/app" }
+my_app_grpc = { path = "crates/grpc" }
+my_app_cli = { path = "crates/cli" }
+tokio = { workspace = true }
+tonic = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
