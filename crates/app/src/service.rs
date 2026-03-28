@@ -17,8 +17,8 @@ impl AppService {
         self.info_action.get_info()
     }
 
-    pub fn deploy_agent(&self, payload: Vec<u8>) -> Result<Vec<u8>, AppError> {
-        info!("executing deploy-agent action");
+    pub fn deploy(&self, payload: Vec<u8>) -> Result<Vec<u8>, AppError> {
+        info!("executing deploy action");
         self.deploy_agent_action.deploy(payload)
     }
 }
@@ -51,12 +51,12 @@ mod tests {
     }
 
     #[test]
-    fn test_app_service_deploy_agent() {
+    fn test_app_service_deploy() {
         let svc = build_service();
         let input = serde_json::json!({"application": "orders-api", "url": "https://orders.example.com"})
             .to_string()
             .into_bytes();
-        let output = svc.deploy_agent(input).unwrap();
+        let output = svc.deploy(input).unwrap();
         let val: serde_json::Value = serde_json::from_slice(&output).unwrap();
         assert_eq!(val["application"], "orders-api");
     }

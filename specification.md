@@ -119,7 +119,7 @@ pub struct AppService {
 
 impl AppService {
     pub fn get_info(&self) -> Result<Vec<u8>, AppError>;
-    pub fn deploy_agent(&self, payload: Vec<u8>) -> Result<Vec<u8>, AppError>;
+    pub fn deploy(&self, payload: Vec<u8>) -> Result<Vec<u8>, AppError>;
 }
 ```
 
@@ -186,7 +186,7 @@ Esempio:
 
 ```rust
 my_app info
-my_app deploy-agent agent.json
+my_app deploy agent.json
 my_app terminate
 ```
 

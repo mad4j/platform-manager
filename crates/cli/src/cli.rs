@@ -29,7 +29,7 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    DeployAgent {
+    Deploy {
         json_file: PathBuf,
     },
     Info,
@@ -44,8 +44,8 @@ pub async fn run() -> anyhow::Result<()> {
     let mut lifecycle_client = LifeCycleClient::new(channel);
 
     match cli.command {
-        Commands::DeployAgent { json_file } => {
-            info!(file = %json_file.display(), "sending deploy-agent request");
+        Commands::Deploy { json_file } => {
+            info!(file = %json_file.display(), "sending deploy request");
 
             let config = std::fs::read_to_string(&json_file)?;
             let _: Value = serde_json::from_str(&config)?;

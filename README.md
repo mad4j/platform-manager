@@ -92,10 +92,10 @@ Expected output shape:
 This command uses the gRPC service `LifeCycle` and method `Terminate(TerminateRequest) -> TerminateResponse`.
 After a successful call, the server receives a shutdown signal and stops gracefully.
 
-Deploy another application using `deploy-agent`:
+Deploy another application using `deploy`:
 
 ```bash
-cargo run --bin cli -- deploy-agent agent.json
+cargo run --bin cli -- deploy agent.json
 ```
 
 Where `agent.json` contains the deployment configuration:

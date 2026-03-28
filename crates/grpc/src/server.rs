@@ -97,15 +97,15 @@ impl FactoryService for GrpcFactoryService {
         &self,
         request: Request<DeployAgentRequest>,
     ) -> Result<Response<DeployAgentResponse>, Status> {
-        info!("received gRPC factory deploy-agent request");
+        info!("received gRPC factory deploy request");
 
         let req = request.into_inner();
-        let result = self.app.deploy_agent(req.config.into_bytes());
+        let result = self.app.deploy(req.config.into_bytes());
 
         match result {
             Ok(payload) => {
                 let value: serde_json::Value = serde_json::from_slice(&payload).map_err(|e| {
-                    Status::internal(format!("failed to parse deploy-agent response: {e}"))
+                    Status::internal(format!("failed to parse deploy response: {e}"))
                 })?;
 
                 let agent_id = value
@@ -118,7 +118,7 @@ impl FactoryService for GrpcFactoryService {
                     .and_then(|v| v.as_str())
                     .unwrap_or_else(|| {
                         if agent_id.is_empty() {
-                            "deploy-agent completed"
+                            "deploy completed"
                         } else {
                             "agent deployed"
                         }
