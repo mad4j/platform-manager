@@ -25,16 +25,12 @@ impl Action for InfoAction {
             application: "platform-manager".to_string(),
             endpoints: vec![
                 InfoEndpoint {
-                    name: "grpc_execute".to_string(),
-                    value: "/action.ActionService/Execute".to_string(),
+                    name: "grpc_info_rpc".to_string(),
+                    value: "/action.InfoService/Info (InfoRequest -> InfoResponse)".to_string(),
                 },
                 InfoEndpoint {
-                    name: "cli_execute".to_string(),
-                    value: "my_app execute <action> <payload_json>".to_string(),
-                },
-                InfoEndpoint {
-                    name: "cli_info".to_string(),
-                    value: "my_app info".to_string(),
+                    name: "grpc_execute_rpc".to_string(),
+                    value: "/action.ActionService/Execute (generic action endpoint)".to_string(),
                 },
             ],
             task_id: format!("task-{millis}"),
@@ -54,7 +50,7 @@ mod tests {
         let output = action.execute(vec![]).unwrap();
         let resp: InfoResponse = serde_json::from_slice(&output).unwrap();
         assert_eq!(resp.application, "platform-manager");
-        assert_eq!(resp.endpoints.len(), 3);
+        assert_eq!(resp.endpoints.len(), 2);
         assert!(resp.task_id.starts_with("task-"));
     }
 

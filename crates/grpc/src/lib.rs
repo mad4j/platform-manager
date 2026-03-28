@@ -1,2 +1,2 @@
 pub mod server;
-pub use server::GrpcActionService;
+pub use server::{GrpcActionService, GrpcInfoService};

@@ -1,0 +1,22 @@
+syntax = "proto3";
+package manager;
+
+// InfoService provides information about the application and its endpoints.
+service InfoService {
+  // Info returns information about the application and its endpoints.
+  rpc Info(InfoRequest) returns (InfoResponse);
+}
+
+message InfoRequest {}
+
+message Endpoint {
+  string name = 1;
+  string value = 2;
+}
+
+message InfoResponse {
+  string application = 1;
+  repeated Endpoint endpoints = 2;
+  string task_id = 3;
+  string error = 4;
+}

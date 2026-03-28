@@ -1,4 +1,5 @@
-use crate::proto::{ActionRequest, ActionResponse, Endpoint, InfoResponse};
+use crate::action::{ActionRequest, ActionResponse};
+use crate::manager::{Endpoint, InfoResponse};
 use my_app_core::AppError;
 use my_app_core::models::InfoResponse as CoreInfoResponse;
 

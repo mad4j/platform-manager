@@ -1,10 +1,12 @@
+use std::sync::Arc;
+
 use my_app_app::AppService;
 use my_app_core::{
     ActionRegistry,
     actions::{echo::EchoAction, info::InfoAction},
 };
-use my_app_grpc::GrpcActionService;
-use my_app_transport::{ActionRequest, ActionServiceClient, InfoRequest};
+use my_app_grpc::{GrpcActionService, GrpcInfoService};
+use my_app_transport::{ActionRequest, ActionServiceClient, InfoRequest, InfoServiceClient};
 use tokio::net::TcpListener;
 use tonic::transport::Server;
 
@@ -16,11 +18,13 @@ async fn test_grpc_echo() {
     let mut registry = ActionRegistry::new();
     registry.register(Box::new(EchoAction));
     registry.register(Box::new(InfoAction));
-    let app = AppService::new(registry);
-    let grpc_service = GrpcActionService::new(app);
+    let app = Arc::new(AppService::new(registry));
+    let grpc_action_service = GrpcActionService::new(Arc::clone(&app));
+    let grpc_info_service = GrpcInfoService::new(app);
 
     let server = Server::builder()
-        .add_service(grpc_service.into_server())
+        .add_service(grpc_action_service.into_server())
+        .add_service(grpc_info_service.into_server())
         .serve_with_incoming(tokio_stream::wrappers::TcpListenerStream::new(listener));
 
     tokio::spawn(server);
@@ -52,11 +56,13 @@ async fn test_grpc_info() {
     let mut registry = ActionRegistry::new();
     registry.register(Box::new(EchoAction));
     registry.register(Box::new(InfoAction));
-    let app = AppService::new(registry);
-    let grpc_service = GrpcActionService::new(app);
+    let app = Arc::new(AppService::new(registry));
+    let grpc_action_service = GrpcActionService::new(Arc::clone(&app));
+    let grpc_info_service = GrpcInfoService::new(app);
 
     let server = Server::builder()
-        .add_service(grpc_service.into_server())
+        .add_service(grpc_action_service.into_server())
+        .add_service(grpc_info_service.into_server())
         .serve_with_incoming(tokio_stream::wrappers::TcpListenerStream::new(listener));
 
     tokio::spawn(server);
@@ -65,14 +71,14 @@ async fn test_grpc_info() {
 
     let endpoint = format!("http://{}", addr);
     let channel = tonic::transport::Channel::from_shared(endpoint).unwrap().connect().await.unwrap();
-    let mut client = ActionServiceClient::new(channel);
+    let mut client = InfoServiceClient::new(channel);
 
     let request = tonic::Request::new(InfoRequest {});
     let response = client.info(request).await.unwrap();
     let resp = response.into_inner();
     assert!(resp.error.is_empty());
     assert_eq!(resp.application, "platform-manager");
-    assert_eq!(resp.endpoints.len(), 3);
+    assert_eq!(resp.endpoints.len(), 2);
     assert!(resp.task_id.starts_with("task-"));
 }
 
@@ -84,11 +90,13 @@ async fn test_grpc_execute_info_is_rejected() {
     let mut registry = ActionRegistry::new();
     registry.register(Box::new(EchoAction));
     registry.register(Box::new(InfoAction));
-    let app = AppService::new(registry);
-    let grpc_service = GrpcActionService::new(app);
+    let app = Arc::new(AppService::new(registry));
+    let grpc_action_service = GrpcActionService::new(Arc::clone(&app));
+    let grpc_info_service = GrpcInfoService::new(app);
 
     let server = Server::builder()
-        .add_service(grpc_service.into_server())
+        .add_service(grpc_action_service.into_server())
+        .add_service(grpc_info_service.into_server())
         .serve_with_incoming(tokio_stream::wrappers::TcpListenerStream::new(listener));
 
     tokio::spawn(server);

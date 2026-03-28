@@ -14,7 +14,7 @@ The project is structured as a Cargo workspace with the following crates:
 | `grpc` | Tonic-based gRPC server implementation |
 | `cli` | Clap-based CLI client that communicates with the server over gRPC |
 
-The single source of truth for the service contract is `proto/action.proto`.
+The single source of truth for the service contract is the `proto/` directory.
 
 ## Project structure
 
@@ -22,7 +22,8 @@ The single source of truth for the service contract is `proto/action.proto`.
 platform-manager/
 ├── Cargo.toml          # workspace root
 ├── proto/
-│   └── action.proto    # gRPC service definition
+│   ├── action.proto    # ActionService definition
+│   └── info.proto      # InfoService definition
 ├── crates/
 │   ├── core/           # business logic and domain types
 │   ├── app/            # application orchestration layer
@@ -88,7 +89,7 @@ With tabular output:
 cargo run --bin cli -- --output table info
 ```
 
-This command uses the dedicated gRPC method `Info(InfoRequest) -> InfoResponse`.
+This command uses the dedicated gRPC service `InfoService` and method `Info(InfoRequest) -> InfoResponse`.
 
 Expected output shape:
 
@@ -96,9 +97,8 @@ Expected output shape:
 {
     "application": "platform-manager",
     "endpoints": [
-        {"name": "grpc_execute", "value": "/action.ActionService/Execute"},
-        {"name": "cli_execute", "value": "my_app execute <action> <payload_json>"},
-        {"name": "cli_info", "value": "my_app info"}
+        {"name": "grpc_info_rpc", "value": "/action.InfoService/Info (InfoRequest -> InfoResponse)"},
+        {"name": "grpc_execute_rpc", "value": "/action.ActionService/Execute (generic action endpoint)"}
     ],
     "task_id": "task-..."
 }

@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand, ValueEnum};
-use my_app_transport::{ActionRequest, ActionServiceClient, InfoRequest};
+use my_app_transport::{ActionRequest, ActionServiceClient, InfoRequest, InfoServiceClient};
 use serde_json::Value;
 use tonic::transport::Channel;
 use tracing::info;
@@ -35,7 +35,8 @@ enum Commands {
 pub async fn run() -> anyhow::Result<()> {
     let cli = Cli::parse();
     let channel = Channel::from_shared(cli.server)?.connect().await?;
-    let mut client = ActionServiceClient::new(channel);
+    let mut action_client = ActionServiceClient::new(channel.clone());
+    let mut info_client = InfoServiceClient::new(channel);
 
     match cli.command {
         Commands::Execute { action, payload } => {
@@ -44,7 +45,7 @@ pub async fn run() -> anyhow::Result<()> {
                 action,
                 payload: payload.into_bytes(),
             });
-            let response = client.execute(request).await?;
+            let response = action_client.execute(request).await?;
             let resp = response.into_inner();
             if !resp.error.is_empty() {
                 eprintln!("Error: {}", resp.error);
@@ -56,7 +57,7 @@ pub async fn run() -> anyhow::Result<()> {
         Commands::Info => {
             info!("sending info request");
             let request = tonic::Request::new(InfoRequest {});
-            let response = client.info(request).await?;
+            let response = info_client.info(request).await?;
             let resp = response.into_inner();
             if !resp.error.is_empty() {
                 eprintln!("Error: {}", resp.error);

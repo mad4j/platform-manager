@@ -1,23 +1,40 @@
+use std::sync::Arc;
+
 use my_app_app::AppService;
 use my_app_app::errors::AppError;
 use my_app_transport::{
     ActionRequest, ActionResponse, ActionService, ActionServiceServer, InfoRequest, InfoResponse,
+    InfoService, InfoServiceServer,
 };
 use my_app_transport::{from_proto, to_info_proto, to_proto};
 use tonic::{Request, Response, Status};
 use tracing::info;
 
 pub struct GrpcActionService {
-    app: AppService,
+    app: Arc<AppService>,
+}
+
+pub struct GrpcInfoService {
+    app: Arc<AppService>,
 }
 
 impl GrpcActionService {
-    pub fn new(app: AppService) -> Self {
+    pub fn new(app: Arc<AppService>) -> Self {
         Self { app }
     }
 
     pub fn into_server(self) -> ActionServiceServer<GrpcActionService> {
         ActionServiceServer::new(self)
+    }
+}
+
+impl GrpcInfoService {
+    pub fn new(app: Arc<AppService>) -> Self {
+        Self { app }
+    }
+
+    pub fn into_server(self) -> InfoServiceServer<GrpcInfoService> {
+        InfoServiceServer::new(self)
     }
 }
 
@@ -40,7 +57,10 @@ impl ActionService for GrpcActionService {
         let response = to_proto(result);
         Ok(Response::new(response))
     }
+}
 
+#[tonic::async_trait]
+impl InfoService for GrpcInfoService {
     async fn info(
         &self,
         _request: Request<InfoRequest>,
