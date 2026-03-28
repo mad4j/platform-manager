@@ -1,4 +1,5 @@
 pub mod echo;
+pub mod info;
 
 use crate::errors::AppError;
 

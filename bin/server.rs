@@ -1,5 +1,8 @@
 use my_app_app::AppService;
-use my_app_core::{ActionRegistry, actions::echo::EchoAction};
+use my_app_core::{
+    ActionRegistry,
+    actions::{echo::EchoAction, info::InfoAction},
+};
 use my_app_grpc::GrpcActionService;
 use tonic::transport::Server;
 use tracing::info;
@@ -10,6 +13,7 @@ async fn main() -> anyhow::Result<()> {
 
     let mut registry = ActionRegistry::new();
     registry.register(Box::new(EchoAction));
+    registry.register(Box::new(InfoAction));
     let app = AppService::new(registry);
     let grpc_service = GrpcActionService::new(app);
 

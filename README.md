@@ -64,10 +64,44 @@ cargo run --bin server
 cargo run --bin cli -- execute echo '{"message":"hello"}'
 ```
 
+Use table output:
+
+```bash
+cargo run --bin cli -- --output table execute echo '{"message":"hello"}'
+```
+
 Expected output:
 
 ```json
 {"message":"hello"}
+```
+
+Get platform information:
+
+```bash
+cargo run --bin cli -- info
+```
+
+With tabular output:
+
+```bash
+cargo run --bin cli -- --output table info
+```
+
+This command uses the dedicated gRPC method `Info(InfoRequest) -> InfoResponse`.
+
+Expected output shape:
+
+```json
+{
+    "application": "platform-manager",
+    "endpoints": [
+        {"name": "grpc_execute", "value": "/action.ActionService/Execute"},
+        {"name": "cli_execute", "value": "my_app execute <action> <payload_json>"},
+        {"name": "cli_info", "value": "my_app info"}
+    ],
+    "task_id": "task-..."
+}
 ```
 
 ### Run tests
